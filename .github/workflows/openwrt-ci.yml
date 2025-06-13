@@ -65,9 +65,9 @@ jobs:
 
       - name: Generate configuration file
         run: | 
-          make defconfig
           echo "CONFIG_PACKAGE_luci-app-alist=y" > .config
           echo "CONFIG_PACKAGE_alist=y" .config
+          make defconfig
 
       - name: Download packages
         run: make download -j16
