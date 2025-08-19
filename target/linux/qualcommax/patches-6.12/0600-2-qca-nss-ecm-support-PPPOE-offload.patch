@@ -351,7 +351,7 @@
  
  /* per-net private data for this module */
  static unsigned int pppoe_net_id __read_mostly;
-@@ -692,7 +693,7 @@ static int pppoe_connect(struct socket *
+@@ -692,7 +692,7 @@ static int pppoe_connect(struct socket *sock, struct sockaddr *uservaddr,
  
  		po->chan.mtu = dev->mtu - sizeof(struct pppoe_hdr) - 2;
  		po->chan.private = sk;
