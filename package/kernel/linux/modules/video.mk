@@ -725,9 +725,7 @@ define KernelPackage/drm-sched
   DEPENDS:=+kmod-drm +LINUX_6_12:kmod-drm-kms-helper
   HIDDEN:=1
   KCONFIG:=CONFIG_DRM_SCHED
-  FILES:= \
-	$(LINUX_DIR)/drivers/gpu/drm/drm_shmem_helper.ko@gt5.17 \
-	$(LINUX_DIR)/drivers/gpu/drm/scheduler/gpu-sched.ko
+  FILES:=$(LINUX_DIR)/drivers/gpu/drm/scheduler/gpu-sched.ko
   AUTOLOAD:=$(call AutoProbe,gpu-sched)
 endef
 
