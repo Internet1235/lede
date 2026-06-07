@@ -1,15 +1,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=apk
+PKG_VERSION=3.0.6
 PKG_RELEASE:=1
 
-PKG_SOURCE_URL=https://gitlab.alpinelinux.org/alpine/apk-tools.git
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_DATE:=2025-06-06
-PKG_SOURCE_VERSION:=9331888de6bd5b280d75112e5b2f7b55684db0ec
-PKG_MIRROR_HASH:=7ebbea3624fb413364f37ac5b0655bb73ea02a054b63cf72b035683cf701ba1f
-
-PKG_VERSION=3.0.0_pre$(subst -,,$(PKG_SOURCE_DATE))
+PKG_SOURCE:=$(PKG_NAME)-tools-v$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL=https://gitlab.alpinelinux.org/alpine/apk-tools/-/archive/v$(PKG_VERSION)/
+PKG_HASH:=e9b62742ef7e9e8c1c051efdaed3a2f49d06d8ce20c707697aa23d29bbc7c86a
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-tools-v$(PKG_VERSION)
 
 PKG_MAINTAINER:=Paul Spooren <mail@aparcar.org>
 PKG_LICENSE:=GPL-2.0-only
@@ -53,13 +51,12 @@ MESON_VARS+=VERSION=$(PKG_VERSION)
 
 MESON_COMMON_ARGS = \
 	-Db_lto=true \
-	-Dcompressed-help=false \
 	-Ddocs=disabled \
 	-Dhelp=enabled \
 	-Dlua_version=5.1 \
 	-Ddefault_library=static \
 	-Durl_backend=wget \
-	-Dzstd=false \
+	-Dzstd=disabled \
 	-Dpython=disabled \
 	-Dtests=disabled
 
@@ -69,7 +66,8 @@ MESON_HOST_ARGS += \
 
 MESON_ARGS += \
 	$(MESON_COMMON_ARGS) \
-	-Dcrypto_backend=$(BUILD_VARIANT)
+	-Dcrypto_backend=$(BUILD_VARIANT) \
+	-Dminimal=true
 
 define Package/apk/conffiles
 /etc/apk/repositories.d/customfeeds.list
