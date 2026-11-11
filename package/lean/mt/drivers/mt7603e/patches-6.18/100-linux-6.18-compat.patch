@@ -1,0 +1,238 @@
+Subject: [PATCH] mt7603e: fix Linux 6.18 Kbuild and kernel API compatibility
+
+Pass legacy feature flags to modern Kbuild and use kernel-owned headers.
+Drop unused address-limit state, replace removed PCI DMA wrappers without
+changing their GFP_ATOMIC allocation semantics, and update timer callbacks
+and cancellation to the current kernel API.
+
+--- a/mt7603_wifi_ap/Makefile
++++ b/mt7603_wifi_ap/Makefile
+@@ -1014,3 +1014,5 @@
+ 
+ MODULE_FLAGS=$(EXTRA_CFLAGS)
+ export MODULE_FLAGS
++
++ccflags-y += $(EXTRA_CFLAGS)
+--- a/mt7603_wifi/include/os/rt_linux.h
++++ b/mt7603_wifi/include/os/rt_linux.h
+@@ -28,6 +28,7 @@
+ #include <linux/pci.h>
++#include <linux/dma-mapping.h>
+ #include <linux/netdevice.h>
+ #include <linux/etherdevice.h>
+ #include <linux/skbuff.h>
+ #include <linux/ethtool.h>
+ #include <linux/wireless.h>
+@@ -64,7 +65,7 @@
+ #include <linux/unistd.h>
+ #include <asm/uaccess.h>
+ #include <asm/types.h>
+-#include <asm/unaligned.h>	/* for get_unaligned() */
++#include <linux/unaligned.h>	/* for get_unaligned() */
+ 
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27)
+ #include <linux/pid.h>
+@@ -336,7 +337,6 @@
+ {
+ 	int				fsuid;
+ 	int				fsgid;
+-	mm_segment_t	fs;
+ } OS_FS_INFO;
+ 
+ #define IS_FILE_OPEN_ERR(_fd) 	((_fd == NULL) || IS_ERR((_fd)))
+@@ -892,8 +892,8 @@
+ #define PCI_ALLOC_CONSISTENT(_pci_dev, _size, _ptr) \
+-	pci_alloc_consistent(_pci_dev, _size, _ptr)
++	dma_alloc_coherent(&((struct pci_dev *)(_pci_dev))->dev, _size, _ptr, GFP_ATOMIC)
+ 
+ #define PCI_FREE_CONSISTENT(_pci_dev, _size, _virtual_addr, _physical_addr) \
+-	pci_free_consistent(_pci_dev, _size, _virtual_addr, _physical_addr)
++	dma_free_coherent(&((struct pci_dev *)(_pci_dev))->dev, _size, _virtual_addr, _physical_addr)
+ 
+ #ifdef VENDOR_FEATURE2_SUPPORT
+ #define DEV_ALLOC_SKB(_pAd, _Pkt, _length)	\
+--- a/mt7603_wifi/include/os/rt_drv.h
++++ b/mt7603_wifi/include/os/rt_drv.h
+@@ -452,8 +452,8 @@
+ #define PCI_ALLOC_CONSISTENT(_pci_dev, _size, _ptr)							\
+-	pci_alloc_consistent(_pci_dev, _size, _ptr)
++	dma_alloc_coherent(&((struct pci_dev *)(_pci_dev))->dev, _size, _ptr, GFP_ATOMIC)
+ 
+ #define PCI_FREE_CONSISTENT(_pci_dev, _size, _virtual_addr, _physical_addr)	\
+-	pci_free_consistent(_pci_dev, _size, _virtual_addr, _physical_addr)
++	dma_free_coherent(&((struct pci_dev *)(_pci_dev))->dev, _size, _virtual_addr, _physical_addr)
+ /*#endif RTMP_MAC_PCI*/
+ 
+ #define DEV_ALLOC_SKB(_pAd, _Pkt, _length)									\
+--- a/mt7603_wifi/include/rtmp_timer.h
++++ b/mt7603_wifi/include/rtmp_timer.h
+@@ -37,7 +37,7 @@
+ #define DECLARE_TIMER_FUNCTION(_func)			\
+-	void rtmp_timer_##_func(unsigned long data)
++	void rtmp_timer_##_func(struct timer_list *_timer)
+ 
+ #define GET_TIMER_FUNCTION(_func)				\
+ 	(PVOID)rtmp_timer_##_func
+ 
+ /* ----------------- Timer Related MARCO ---------------*/
+@@ -102,7 +102,7 @@
+ #define BUILD_TIMER_FUNCTION(_func)										\
+ 	void rtmp_timer_##_func(struct timer_list *_timer)										\
+ 	{																			\
+-		PRALINK_TIMER_STRUCT	_pTimer = from_timer(_pTimer,_timer,_timer);				\
++		PRALINK_TIMER_STRUCT	_pTimer = timer_container_of(_pTimer, _timer, TimerObj);	\
+ 		RTMP_TIMER_TASK_ENTRY	*_pQNode;										\
+ 		RTMP_ADAPTER			*_pAd;											\
+ 		\
+@@ -116,7 +116,7 @@
+ #define BUILD_TIMER_FUNCTION(_func)										\
+-void rtmp_timer_##_func(unsigned long data)										\
++void rtmp_timer_##_func(struct timer_list *_timer)										\
+ {																			\
+-	PRALINK_TIMER_STRUCT	pTimer = (PRALINK_TIMER_STRUCT) data;				\
++	PRALINK_TIMER_STRUCT	pTimer = timer_container_of(pTimer, _timer, TimerObj);	\
+ 																			\
+ 	_func(NULL, (PVOID) pTimer->cookie, NULL, pTimer); 							\
+ 	if (pTimer->Repeat)														\
+--- a/mt7603_wifi/os/linux/rt_linux.c
++++ b/mt7603_wifi/os/linux/rt_linux.c
+@@ -193,7 +193,7 @@
+ {
+ 	if (timer_pending(pTimer))
+-		*pCancelled = del_timer_sync(pTimer);
++		*pCancelled = timer_delete_sync(pTimer);
+ 	else
+ 		*pCancelled = TRUE;
+ }
+ 
+@@ -1930,7 +1930,6 @@
+ {
+ 	struct file *file_w;
+ 	RTMP_STRING *fileName = "MacDump.txt";
+-	mm_segment_t orig_fs;
+ 	RTMP_STRING *msg;
+ 	UINT32 macAddr = 0, macValue = 0;
+ 
+@@ -1984,7 +1983,6 @@
+ {
+ 	struct file *file_w;
+ 	RTMP_STRING *fileName = "EEPROMDump.txt";
+-	mm_segment_t orig_fs;
+ 	RTMP_STRING *msg;
+ 	USHORT eepAddr = 0;
+ 	USHORT eepValue;
+@@ -2039,7 +2037,6 @@
+ {
+ 	struct file *file_w;
+ 	RTMP_STRING *fileName = "RFDump.txt";
+-	mm_segment_t orig_fs;
+ 
+ #if 0
+ 	orig_fs = get_fs();
+--- a/mt7603_wifi/ap/ap_mlme.c
++++ b/mt7603_wifi/ap/ap_mlme.c
+@@ -26,7 +26,7 @@
+  */
+ 
+ #include "rt_config.h"
+-#include <stdarg.h>
++#include <linux/stdarg.h>
+ 
+ #ifdef BTCOEX_CONCURRENT
+ extern void MT7662ReceCoexFromOtherCHip(
+--- a/mt7603_wifi/common/mlme.c
++++ b/mt7603_wifi/common/mlme.c
+@@ -26,7 +26,7 @@
+ */
+ 
+ #include "rt_config.h"
+-#include <stdarg.h>
++#include <linux/stdarg.h>
+ #ifdef DOT11R_FT_SUPPORT
+ #include "ft.h"
+ #endif /* DOT11R_FT_SUPPORT */
+--- a/mt7603_wifi/os/linux/rt_rbus_pci_util.c
++++ b/mt7603_wifi/os/linux/rt_rbus_pci_util.c
+@@ -34,7 +34,7 @@
+ {
+ 	dma_addr_t DmaAddr = (dma_addr_t)(*phy_addr);
+ 
+-	*VirtualAddress = (PVOID)pci_alloc_consistent(pPciDev,sizeof(char)*Length, &DmaAddr);
++	*VirtualAddress = dma_alloc_coherent(&pPciDev->dev, sizeof(char)*Length, &DmaAddr, GFP_ATOMIC);
+ 	*phy_addr = (NDIS_PHYSICAL_ADDRESS)DmaAddr;
+ }
+ 
+@@ -48,7 +48,7 @@
+ {
+ 	dma_addr_t DmaAddr = (dma_addr_t)(phy_addr);
+ 
+-	pci_free_consistent(pPciDev, Length, VirtualAddress, DmaAddr);
++	dma_free_coherent(&pPciDev->dev, Length, VirtualAddress, DmaAddr);
+ }
+ 
+ 
+@@ -63,7 +63,7 @@
+ {
+ 	dma_addr_t DmaAddr = (dma_addr_t)(*phy_addr);
+ 
+-	*VirtualAddress = (PVOID)pci_alloc_consistent(pPciDev,sizeof(char)*Length, &DmaAddr);
++	*VirtualAddress = dma_alloc_coherent(&pPciDev->dev, sizeof(char)*Length, &DmaAddr, GFP_ATOMIC);
+ 	*phy_addr = (NDIS_PHYSICAL_ADDRESS)DmaAddr;
+ }
+ 
+@@ -77,7 +77,7 @@
+ {
+ 	dma_addr_t DmaAddr = (dma_addr_t)(phy_addr);
+-	pci_free_consistent(pPciDev, Length, VirtualAddress, DmaAddr);
++	dma_free_coherent(&pPciDev->dev, Length, VirtualAddress, DmaAddr);
+ }
+ 
+ 
+ /*
+@@ -138,11 +138,13 @@
+  */
+ ra_dma_addr_t linux_pci_map_single(void *pPciDev, void *ptr, size_t size, int sd_idx, int direction)
+ {
++	struct pci_dev *pdev = pPciDev;
++
+ 	if (direction == RTMP_PCI_DMA_TODEVICE)
+-		direction = PCI_DMA_TODEVICE;
++		direction = DMA_TO_DEVICE;
+ 
+ 	if (direction == RTMP_PCI_DMA_FROMDEVICE)
+-		direction = PCI_DMA_FROMDEVICE;
++		direction = DMA_FROM_DEVICE;
+ 
+ 	/* 
+ 		------ Porting Information ------
+@@ -164,7 +166,7 @@
+ /*	pObj = (POS_COOKIE)pAd->OS_Cookie; */
+ 	
+ 	{
+-		return (ra_dma_addr_t)pci_map_single(pPciDev, ptr, size, direction);
++		return (ra_dma_addr_t)dma_map_single(&pdev->dev, ptr, size, direction);
+ 	}
+ 
+ }
+@@ -171,17 +173,18 @@
+ 
+ void linux_pci_unmap_single(void *pPciDev, ra_dma_addr_t radma_addr, size_t size, int direction)
+ {
++	struct pci_dev *pdev = pPciDev;
+ 	dma_addr_t DmaAddr = (dma_addr_t)radma_addr;
+ 
+ 
+ 	if (direction == RTMP_PCI_DMA_TODEVICE)
+-		direction = PCI_DMA_TODEVICE;
++		direction = DMA_TO_DEVICE;
+ 
+ 	if (direction == RTMP_PCI_DMA_FROMDEVICE)
+-		direction = PCI_DMA_FROMDEVICE;
++		direction = DMA_FROM_DEVICE;
+ 	
+ 	if (size > 0)
+-		pci_unmap_single(pPciDev, DmaAddr, size, direction);
++		dma_unmap_single(&pdev->dev, DmaAddr, size, direction);
+ 	
+ }
+ 
