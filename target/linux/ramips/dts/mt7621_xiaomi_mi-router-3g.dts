@@ -1,5 +1,4 @@
 #include "mt7621_xiaomi_nand_128m.dtsi"
-#include <dt-bindings/leds/common.h>
 
 / {
 	compatible = "xiaomi,mi-router-3g", "mediatek,mt7621-soc";
@@ -16,47 +15,52 @@
 	leds {
 		compatible = "gpio-leds";
 
-		led_status_red: led-0 {
-			color = <LED_COLOR_ID_RED>;
-			function = LED_FUNCTION_STATUS;
+		led_status_red: status_red {
+			label = "red:status";
 			gpios = <&gpio 6 GPIO_ACTIVE_LOW>;
 		};
 
-		led_status_blue: led-1 {
-			color = <LED_COLOR_ID_BLUE>;
-			function = LED_FUNCTION_STATUS;
+		led_status_blue: status_blue {
+			label = "blue:status";
 			gpios = <&gpio 8 GPIO_ACTIVE_LOW>;
 		};
 
-		led_status_yellow: led-2 {
-			color = <LED_COLOR_ID_YELLOW>;
-			function = LED_FUNCTION_STATUS;
+		led_status_yellow: status_yellow {
+			label = "yellow:status";
 			gpios = <&gpio 10 GPIO_ACTIVE_LOW>;
 		};
 
-		led-3 {
-			color = <LED_COLOR_ID_AMBER>;
-			function = LED_FUNCTION_WAN;
+		wan_amber {
+			label = "amber:wan";
 			gpios = <&gpio 13 GPIO_ACTIVE_LOW>;
-			linux,default-trigger = "mt7530-0:01:1Gbps";
+			linux,default-trigger = "dsa-0.0:01:1Gbps";
 		};
 
-		led-4 {
-			color = <LED_COLOR_ID_AMBER>;
-			function = LED_FUNCTION_LAN;
-			function-enumerator = <1>;
+		lan1_amber {
+			label = "amber:lan1";
 			gpios = <&gpio 14 GPIO_ACTIVE_LOW>;
-			linux,default-trigger = "mt7530-0:03:1Gbps";
+			linux,default-trigger = "dsa-0.0:03:1Gbps";
 		};
 
-		led-5 {
-			color = <LED_COLOR_ID_AMBER>;
-			function = LED_FUNCTION_LAN;
-			function-enumerator = <2>;
+		lan2_amber {
+			label = "amber:lan2";
 			gpios = <&gpio 16 GPIO_ACTIVE_LOW>;
-			linux,default-trigger = "mt7530-0:02:1Gbps";
+			linux,default-trigger = "dsa-0.0:02:1Gbps";
 		};
 	};
+
+	reg_usb_vbus: regulator {
+		compatible = "regulator-fixed";
+		regulator-name = "usb_vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio 12 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+};
+
+&xhci {
+	vbus-supply = <&reg_usb_vbus>;
 };
 
 &pcie {
@@ -65,20 +69,18 @@
 
 &pcie0 {
 	wifi@0,0 {
-		compatible = "mediatek,mt76";
+		compatible = "pci14c3,7603";
 		reg = <0x0000 0 0 0 0>;
-		nvmem-cells = <&eeprom_factory_0>;
-		nvmem-cell-names = "eeprom";
+		mediatek,mtd-eeprom = <&factory 0x0000>;
 		ieee80211-freq-limit = <2400000 2500000>;
 	};
 };
 
 &pcie1 {
 	wifi@0,0 {
-		compatible = "mediatek,mt76";
+		compatible = "pci14c3,7662";
 		reg = <0x0000 0 0 0 0>;
-		nvmem-cells = <&eeprom_factory_8000>;
-		nvmem-cell-names = "eeprom";
+		mediatek,mtd-eeprom = <&factory 0x8000>;
 		ieee80211-freq-limit = <5000000 6000000>;
 	};
 };
@@ -88,36 +90,59 @@
 	nvmem-cell-names = "mac-address";
 };
 
-&reg_vbus {
-	/delete-property/ regulator-always-on;
-	gpios = <&gpio 12 GPIO_ACTIVE_HIGH>;
-	enable-active-high;
+&gmac1 {
+	nvmem-cells = <&macaddr_factory_e000>;
+	nvmem-cell-names = "mac-address";
+};
+
+&switch0 {
+	/* must delete compatible property */
+	/delete-property/ compatible;
+};
+
+&hnat {
+        mtketh-wan = "eth1";
+        mtketh-ppd = "eth0";
+        mtketh-lan = "eth0";
+	ext-devices = "wlan0","wlan1","rax0","ra0", "rai0","apclii0","apclix0", "apcli0","usb0","wwan0";
+        mtketh-max-gmac = <2>;
+        status = "okay";
 };
 
 &gsw {
+	mediatek,mdio = <&mdio>;
+	mediatek,portmap = "lwlll";
+	mediatek,mcm;
+	mt7530,direct-phy-access;
 
-		port@1 {
+	resets = <&rstctrl 2>;
+	reset-names = "mcm";
+
+	port5: port@5 {
 		compatible = "mediatek,mt753x-port";
-			status = "okay";
-			label = "wan";
-			nvmem-cells = <&macaddr_factory_e000>;
-			nvmem-cell-names = "mac-address";
+		reg = <5>;
+		phy-mode = "rgmii";
+		fixed-link {
+			speed = <1000>;
+			full-duplex;
 		};
+	};
 
-		port@2 {
+	port6: port@6 {
 		compatible = "mediatek,mt753x-port";
-			status = "okay";
-			label = "lan2";
+		reg = <6>;
+		phy-mode = "rgmii";
+		fixed-link {
+			speed = <1000>;
+			full-duplex;
 		};
+	};
 
-		port@3 {
-		compatible = "mediatek,mt753x-port";
-			status = "okay";
-			label = "lan1";
-		};
-
+	mdio-bus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+	};
 };
-
 &state_default {
 	gpio {
 		groups = "jtag", "uart2", "uart3", "wdt";
@@ -125,8 +150,16 @@
 	};
 };
 
-&hnat {
-	mtketh-lan = "eth0.1";
-	mtketh-wan = "eth0.2";
-	mtketh-max-gmac = <1>;
+&factory {
+	compatible = "nvmem-cells";
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	macaddr_factory_e000: macaddr@e000 {
+		reg = <0xe000 0x6>;
+	};
+
+	macaddr_factory_e006: macaddr@e006 {
+		reg = <0xe006 0x6>;
+	};
 };

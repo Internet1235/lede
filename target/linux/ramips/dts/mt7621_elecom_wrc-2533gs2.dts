@@ -44,12 +44,16 @@
 	nvmem-cell-names = "mac-address";
 };
 
-&gmac1 {
+&wan {
 	nvmem-cells = <&macaddr_factory_fffa>;
 	nvmem-cell-names = "mac-address";
 };
 
-&nvmem {
+&factory {
+	compatible = "nvmem-cells";
+	#address-cells = <1>;
+	#size-cells = <1>;
+
 	macaddr_factory_fff4: macaddr@fff4 {
 		reg = <0xfff4 0x6>;
 	};

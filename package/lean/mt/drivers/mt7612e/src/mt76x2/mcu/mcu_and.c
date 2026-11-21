@@ -100,10 +100,10 @@ loadfw_protect:
 
 #ifdef DBG
 	/* get rom patch information */
-	printk(KERN_CONT "build time = ");
+	DBGPRINT(RT_DEBUG_OFF, ("build time = "));
 	for (loop = 0; loop < 16; loop++)
-		printk(KERN_CONT "%c", *(cap->rom_patch + loop));
-	printk(KERN_CONT "\n");
+		DBGPRINT(RT_DEBUG_OFF, ("%c", *(cap->rom_patch + loop)));
+	DBGPRINT(RT_DEBUG_OFF, ("\n"));
 #endif
 
 	if (IS_MT76x2(ad)) {
@@ -121,22 +121,22 @@ loadfw_protect:
 	}
 	
 #ifdef DBG
-	printk(KERN_CONT "\n");
+	DBGPRINT(RT_DEBUG_OFF, ("\n"));
 
-	printk(KERN_CONT "platform = ");
+	DBGPRINT(RT_DEBUG_OFF, ("platform = "));
 	for (loop = 0; loop < 4; loop++)
-		printk(KERN_CONT "%c", *(cap->rom_patch + 16 + loop));
-	printk(KERN_CONT "\n");
+		DBGPRINT(RT_DEBUG_OFF, ("%c", *(cap->rom_patch + 16 + loop)));
+	DBGPRINT(RT_DEBUG_OFF, ("\n"));
 
-	printk(KERN_CONT "hw/sw version = ");
+	DBGPRINT(RT_DEBUG_OFF, ("hw/sw version = "));
 	for (loop = 0; loop < 4; loop++)
-		printk(KERN_CONT "%x", *(cap->rom_patch + 20 + loop));
-	printk(KERN_CONT "\n");
+		DBGPRINT(RT_DEBUG_OFF, ("%x", *(cap->rom_patch + 20 + loop)));
+	DBGPRINT(RT_DEBUG_OFF, ("\n"));
 
-	printk(KERN_CONT "patch version = ");
+	DBGPRINT(RT_DEBUG_OFF, ("patch version = "));
 	for (loop = 0; loop < 4; loop++)
-		printk(KERN_CONT "%x", *(cap->rom_patch + 24 + loop));
-	printk(KERN_CONT "\n");
+		DBGPRINT(RT_DEBUG_OFF, ("%x", *(cap->rom_patch + 24 + loop)));
+	DBGPRINT(RT_DEBUG_OFF, ("\n"));
 #endif
 
 	RTMP_IO_WRITE32(ad, PCIE_REMAP_BASE4, cap->rom_patch_offset - 10000);
@@ -239,10 +239,10 @@ int andes_pci_erasefw(RTMP_ADAPTER *ad)
 							(fw_ver & 0x0f00) >> 8, fw_ver & 0x00ff));
 		DBGPRINT(RT_DEBUG_TRACE, ("Build:%x\n", build_ver));
 
-		printk(KERN_CONT "Build Time:");
+		DBGPRINT(RT_DEBUG_TRACE, ("Build Time:"));
 		for (loop = 0; loop < 16; loop++)
-			printk(KERN_CONT "%c", *(cap->FWImageName + 16 + loop));
-		printk(KERN_CONT "\n");
+			DBGPRINT(RT_DEBUG_TRACE, ("%c", *(cap->FWImageName + 16 + loop)));
+		DBGPRINT(RT_DEBUG_TRACE, ("\n"));
 
 		DBGPRINT(RT_DEBUG_TRACE, ("ILM Length = %d(bytes)\n", ilm_len));
 		DBGPRINT(RT_DEBUG_TRACE, ("DLM Length = %d(bytes)\n", dlm_len));
@@ -386,10 +386,10 @@ loadfw_protect:
 						(fw_ver & 0x0f00) >> 8, fw_ver & 0x00ff));
 	DBGPRINT(RT_DEBUG_OFF, ("Build:%x\n", build_ver));
 
-	printk(KERN_CONT "Build Time:");
+	DBGPRINT(RT_DEBUG_OFF, ("Build Time:"));
 	for (loop = 0; loop < 16; loop++)
-		printk(KERN_CONT "%c", *(cap->FWImageName + 16 + loop));
-	printk(KERN_CONT "\n");
+		DBGPRINT(RT_DEBUG_OFF, ("%c", *(cap->FWImageName + 16 + loop)));
+	DBGPRINT(RT_DEBUG_OFF, ("\n"));
 #endif
 	
 	if (IS_MT76x2(ad)) {

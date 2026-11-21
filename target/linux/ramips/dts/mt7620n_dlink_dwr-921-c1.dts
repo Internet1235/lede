@@ -2,7 +2,6 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
-#include <dt-bindings/leds/common.h>
 #include <dt-bindings/mtd/partitions/uimage.h>
 
 / {
@@ -39,8 +38,7 @@
 		};
 
 		lan {
-			function = LED_FUNCTION_LAN;
-			color = <LED_COLOR_ID_GREEN>;
+			label = "green:lan";
 			gpios = <&gpio1 15 GPIO_ACTIVE_HIGH>;
 		};
 
@@ -72,6 +70,7 @@
 
 	gpio_export {
 		compatible = "gpio-export";
+		#size-cells = <0>;
 
 		lte_modem_enable {
 			gpio-export,name = "lte_modem_enable";
@@ -120,7 +119,7 @@
 				reg = <0x10000 0xfe0000>;
 			};
 
-			partition@ff0000 {
+			config: partition@ff0000 {
 				label = "config";
 				reg = <0xff0000 0x10000>;
 				read-only;

@@ -2,7 +2,6 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
-#include <dt-bindings/leds/common.h>
 
 / {
 	compatible = "dlink,dap-1522-a1", "ralink,rt2880-soc";
@@ -32,24 +31,10 @@
 				read-only;
 			};
 
-			partition@30000 {
+			factory: partition@30000 {
 				label = "factory";
 				reg = <0x30000 0x10000>;
 				read-only;
-
-				nvmem-layout {
-					compatible = "fixed-layout";
-					#address-cells = <1>;
-					#size-cells = <1>;
-
-					eeprom_factory_2000: eeprom@2000 {
-						reg = <0x2000 0x200>;
-					};
-
-					macaddr_factory_2004: macaddr@2004 {
-						reg = <0x2004 0x6>;
-					};
-				};
 			};
 
 			partition@40000 {
@@ -62,12 +47,13 @@
 
 	rtl8366s {
 		compatible = "realtek,rtl8366s";
-		sda-gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>;
-		sck-gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+		gpio-sda = <&gpio0 1 GPIO_ACTIVE_HIGH>;
+		gpio-sck = <&gpio0 2 GPIO_ACTIVE_HIGH>;
 	};
 
 	keys {
-		compatible = "gpio-keys";
+		compatible = "gpio-keys-polled";
+		poll-interval = <100>;
 
 		reset {
 			label = "reset";
@@ -100,8 +86,7 @@
 		compatible = "gpio-leds";
 
 		wps {
-			function = LED_FUNCTION_WPS;
-			color = <LED_COLOR_ID_BLUE>;
+			label = "blue:wps";
 			gpios = <&gpio2 17 GPIO_ACTIVE_LOW>;
 		};
 
@@ -116,8 +101,7 @@
 		};
 
 		led_status: status {
-			function = LED_FUNCTION_STATUS;
-			color = <LED_COLOR_ID_BLUE>;
+			label = "blue:status";
 			gpios = <&gpio2 20 GPIO_ACTIVE_LOW>;
 		};
 	};
@@ -154,6 +138,15 @@
 };
 
 &wmac {
-	nvmem-cells = <&eeprom_factory_2000>;
-	nvmem-cell-names = "eeprom";
+	ralink,mtd-eeprom = <&factory 0x2000>;
+};
+
+&factory {
+	compatible = "nvmem-cells";
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	macaddr_factory_2004: macaddr@2004 {
+		reg = <0x2004 0x6>;
+	};
 };

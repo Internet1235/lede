@@ -37,7 +37,6 @@ define KernelPackage/mt7603e
   CATEGORY:=Kernel modules
   TITLE:=MTK wifi AP driver
   DEPENDS:=@TARGET_ramips
-  CONFLICTS:=kmod-mt7603
   FILES:=$(PKG_BUILD_DIR)/mt7603_wifi_ap/mt7603e.ko
   SUBMENU:=Wireless Drivers
   MENU:=1

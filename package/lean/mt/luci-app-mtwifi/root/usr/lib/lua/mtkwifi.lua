@@ -51,7 +51,7 @@ function mtkwifi.__handleSpecialChars(s)
 end
 
 -- if order function given, sort by it by passing the table and keys a, b,
--- otherwise just sort the keys
+-- otherwise just sort the keys 
 function mtkwifi.__spairs(t, order)
     -- collect the keys
     local keys = {}
@@ -243,7 +243,7 @@ local WirelessModeList = {
     [14] = "A/AC/AN mixed",
     [15] = "AC/AN mixed", --but no A mode
     [16] = "AX/B/G/GN mode",
-    [17] = "AX/AC/AN mixed",
+    [17] = "AX/AC/AN mixed", 
 }
 
 local DevicePropertyMap = {
@@ -431,7 +431,7 @@ function mtkwifi.band(mode)
     or i == 4
     or i == 6
     or i == 7
-    or i == 9
+    or i == 9 
     or i == 16 then
         return "2.4G"
     else

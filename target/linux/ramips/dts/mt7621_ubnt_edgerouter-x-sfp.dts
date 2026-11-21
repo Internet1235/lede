@@ -58,30 +58,3 @@
 		sfp = <&sfp_eth5>;
 	};
 };
-
-&rgmii2_pins {
-	rgmii2 {
-		function = "gpio";
-	};
-};
-
-&gsw {
-
-		port@5 {
-		compatible = "mediatek,mt753x-port";
-			reg = <5>;
-			openwrt,netdev-name = "eth5";
-			phy-handle = <&ephy7>;
-			phy-mode = "rgmii-rxid";
-			nvmem-cells = <&macaddr_factory_22 5>;
-			nvmem-cell-names = "mac-address";
-			/delete-property/ label;
-		};
-
-};
-
-&hnat {
-	mtketh-lan = "eth0.1";
-	mtketh-wan = "eth0.2";
-	mtketh-max-gmac = <1>;
-};

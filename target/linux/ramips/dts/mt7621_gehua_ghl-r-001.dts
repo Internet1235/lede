@@ -4,7 +4,6 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
-#include <dt-bindings/leds/common.h>
 
 / {
 	compatible = "gehua,ghl-r-001", "mediatek,mt7621-soc";
@@ -19,8 +18,7 @@
 		};
 
 		usb {
-			function = LED_FUNCTION_USB;
-			color = <LED_COLOR_ID_BLUE>;
+			label = "blue:usb";
 			gpios = <&gpio 15 GPIO_ACTIVE_LOW>;
 			trigger-sources = <&xhci_ehci_port1>, <&ehci_port2>;
 			linux,default-trigger = "usbport";
@@ -69,30 +67,10 @@
 				read-only;
 			};
 
-			partition@40000 {
+			factory: partition@40000 {
 				label = "factory";
 				reg = <0x40000 0x10000>;
 				read-only;
-
-				nvmem-layout {
-					compatible = "fixed-layout";
-					#address-cells = <1>;
-					#size-cells = <1>;
-
-					eeprom_factory_0: eeprom@0 {
-						reg = <0x0 0x400>;
-					};
-
-					eeprom_factory_8000: eeprom@8000 {
-						reg = <0x8000 0x200>;
-					};
-
-					macaddr_factory_e000: macaddr@e000 {
-						compatible = "mac-base";
-						reg = <0xe000 0x6>;
-						#nvmem-cell-cells = <1>;
-					};
-				};
 			};
 
 			partition@50000 {
@@ -110,19 +88,15 @@
 
 &pcie0 {
 	wifi@0,0 {
-		compatible = "mediatek,mt76";
 		reg = <0x0000 0 0 0 0>;
-		nvmem-cells = <&eeprom_factory_0>;
-		nvmem-cell-names = "eeprom";
+		mediatek,mtd-eeprom = <&factory 0x0000>;
 	};
 };
 
 &pcie1 {
 	wifi@0,0 {
-		compatible = "mediatek,mt76";
 		reg = <0x0000 0 0 0 0>;
-		nvmem-cells = <&eeprom_factory_8000>;
-		nvmem-cell-names = "eeprom";
+		mediatek,mtd-eeprom = <&factory 0x8000>;
 		ieee80211-freq-limit = <5000000 6000000>;
 
 		led {
@@ -133,48 +107,78 @@
 };
 
 &gmac0 {
-	nvmem-cells = <&macaddr_factory_e000 0>;
+	nvmem-cells = <&macaddr_factory_e000>;
 	nvmem-cell-names = "mac-address";
 };
 
 &gmac1 {
-	status = "okay";
-	label = "wan";
-	phy-handle = <&ethphy4>;
-
-	nvmem-cells = <&macaddr_factory_e000 1>;
+	nvmem-cells = <&macaddr_factory_e000>;
 	nvmem-cell-names = "mac-address";
+	mac-address-increment = <1>;
 };
 
-&ethphy4 {
-	/delete-property/ interrupts;
+&switch0 {
+	/* must delete compatible property */
+	/delete-property/ compatible;
+};
+
+&hnat {
+        mtketh-wan = "eth0.2";
+        mtketh-ppd = "eth0.1";
+        mtketh-lan = "eth0";
+	ext-devices = "wlan0","wlan1","rax0","ra0", "rai0","apclii0","apclix0", "apcli0";
+        mtketh-max-gmac = <1>;
+        status = "okay";
 };
 
 &gsw {
+	mediatek,mdio = <&mdio>;
+	mediatek,portmap = "llllw";
+	mediatek,mcm;
+	mt7530,direct-phy-access;
 
-		port@0 {
+	resets = <&rstctrl 2>;
+	reset-names = "mcm";
+
+	port5: port@5 {
 		compatible = "mediatek,mt753x-port";
-			status = "okay";
-			label = "lan1";
+		reg = <5>;
+		phy-mode = "rgmii";
+		fixed-link {
+			speed = <1000>;
+			full-duplex;
 		};
+	};
 
-		port@1 {
+	port6: port@6 {
 		compatible = "mediatek,mt753x-port";
-			status = "okay";
-			label = "lan2";
+		reg = <6>;
+		phy-mode = "rgmii";
+		fixed-link {
+			speed = <1000>;
+			full-duplex;
 		};
+	};
 
-		port@2 {
-		compatible = "mediatek,mt753x-port";
-			status = "okay";
-			label = "lan3";
-		};
-
+	mdio-bus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+	};
 };
 
 &state_default {
 	gpio {
 		groups = "jtag", "wdt";
 		function = "gpio";
+	};
+};
+
+&factory {
+	compatible = "nvmem-cells";
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	macaddr_factory_e000: macaddr@e000 {
+		reg = <0xe000 0x6>;
 	};
 };

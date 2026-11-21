@@ -4,7 +4,6 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
-#include <dt-bindings/leds/common.h>
 
 / {
 	aliases {
@@ -12,7 +11,6 @@
 		led-failsafe = &led_power;
 		led-running = &led_power;
 		led-upgrade = &led_power;
-		label-mac-device = &gmac0;
 	};
 
 	chosen {
@@ -39,8 +37,7 @@
 		compatible = "gpio-leds";
 
 		wan_green {
-			function = LED_FUNCTION_WAN;
-			color = <LED_COLOR_ID_GREEN>;
+			label = "green:wan";
 			gpios = <&gpio 7 GPIO_ACTIVE_LOW>;
 		};
 
@@ -65,14 +62,12 @@
 		};
 
 		led_power: power {
-			function = LED_FUNCTION_POWER;
-			color = <LED_COLOR_ID_WHITE>;
+			label = "white:power";
 			gpios = <&gpio 10 GPIO_ACTIVE_HIGH>;
 		};
 
 		wps {
-			function = LED_FUNCTION_WPS;
-			color = <LED_COLOR_ID_GREEN>;
+			label = "green:wps";
 			gpios = <&gpio 5 GPIO_ACTIVE_HIGH>;
 		};
 	};
@@ -102,24 +97,10 @@
 			reg = <0x80000 0x40000>;
 		};
 
-		partition@c0000 {
+		factory: partition@c0000 {
 			label = "factory";
 			reg = <0xc0000 0x40000>;
 			read-only;
-
-			nvmem-layout {
-				compatible = "fixed-layout";
-				#address-cells = <1>;
-				#size-cells = <1>;
-
-				eeprom_factory_0: eeprom@0 {
-					reg = <0x0 0x4da8>;
-				};
-
-				eeprom_factory_8000: eeprom@8000 {
-					reg = <0x8000 0x4da8>;
-				};
-			};
 		};
 
 		partition@100000 {
@@ -131,16 +112,6 @@
 			label = "devinfo";
 			reg = <0x140000 0x40000>;
 			read-only;
-
-			nvmem-layout {
-				compatible = "ascii-eq-delim-env";
-
-				hw_mac_addr: hw_mac_addr {
-					compatible = "mac-base";
-
-					#nvmem-cell-cells = <1>;
-				};
-			};
 		};
 
 		partition@180000 {
@@ -191,67 +162,46 @@
 };
 
 &pcie0 {
-	wifi@0,0 {
-		ieee80211-freq-limit = <2400000 2500000>;
+	mt76@0,0 {
 		compatible = "mediatek,mt76";
 		reg = <0x0000 0 0 0 0>;
-		nvmem-cells = <&eeprom_factory_0>, <&hw_mac_addr 1>;
-		nvmem-cell-names = "eeprom", "mac-address";
+		mediatek,mtd-eeprom = <&factory 0x0000>;
 	};
 };
 
 &pcie1 {
-	wifi@0,0 {
-		ieee80211-freq-limit = <5000000 6000000>;
+	mt76@0,0 {
 		compatible = "mediatek,mt76";
 		reg = <0x0000 0 0 0 0>;
-		nvmem-cells = <&eeprom_factory_8000>, <&hw_mac_addr 2>;
-		nvmem-cell-names = "eeprom", "mac-address";
+		mediatek,mtd-eeprom = <&factory 0x8000>;
 	};
 };
 
-&gmac0 {
-	nvmem-cells = <&hw_mac_addr 0>;
-	nvmem-cell-names = "mac-address";
-};
-
-&gmac1 {
-	status = "okay";
-	label = "wan";
-	phy-handle = <&ethphy0>;
-
-	nvmem-cells = <&hw_mac_addr 0>;
-	nvmem-cell-names = "mac-address";
-};
-
-&ethphy0 {
-	/delete-property/ interrupts;
-};
-
-&gsw {
+&switch0 {
+	ports {
+		port@0 {
+			status = "okay";
+			label = "wan";
+		};
 
 		port@1 {
-		compatible = "mediatek,mt753x-port";
 			status = "okay";
 			label = "lan1";
 		};
 
 		port@2 {
-		compatible = "mediatek,mt753x-port";
 			status = "okay";
 			label = "lan2";
 		};
 
 		port@3 {
-		compatible = "mediatek,mt753x-port";
 			status = "okay";
 			label = "lan3";
 		};
 
 		port@4 {
-		compatible = "mediatek,mt753x-port";
 			status = "okay";
 			label = "lan4";
 		};
-
+	};
 };

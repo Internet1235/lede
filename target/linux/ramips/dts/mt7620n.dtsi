@@ -1,7 +1,5 @@
 /dts-v1/;
 
-#include <dt-bindings/clock/mediatek,mtmips-sysc.h>
-
 / {
 	#address-cells = <1>;
 	#size-cells = <1>;
@@ -42,30 +40,24 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 
-		sysc: syscon@0 {
-			compatible = "ralink,mt7620-sysc", "syscon";
+		sysc: sysc@0 {
+			compatible = "ralink,mt7620a-sysc", "ralink,rt3050-sysc", "syscon";
 			reg = <0x0 0x100>;
-			#clock-cells = <1>;
-			#reset-cells = <1>;
 		};
 
 		timer: timer@100 {
-			compatible = "ralink,rt2880-timer";
+			compatible = "ralink,mt7620a-timer", "ralink,rt2880-timer";
 			reg = <0x100 0x20>;
-
-			clocks = <&sysc MT7620_CLK_TIMER>;
 
 			interrupt-parent = <&intc>;
 			interrupts = <1>;
 		};
 
 		watchdog: watchdog@120 {
-			compatible = "ralink,rt2880-wdt";
+			compatible = "ralink,mt7620a-wdt", "ralink,rt2880-wdt";
 			reg = <0x120 0x10>;
 
-			clocks = <&sysc MT7620_CLK_WATCHDOG>;
-
-			resets = <&sysc 8>;
+			resets = <&rstctrl 8>;
 			reset-names = "wdt";
 
 			interrupt-parent = <&intc>;
@@ -73,8 +65,11 @@
 		};
 
 		intc: intc@200 {
-			compatible = "ralink,rt2880-intc";
+			compatible = "ralink,mt7620a-intc", "ralink,rt2880-intc";
 			reg = <0x200 0x100>;
+
+			resets = <&rstctrl 19>;
+			reset-names = "intc";
 
 			interrupt-controller;
 			#interrupt-cells = <1>;
@@ -87,41 +82,45 @@
 			compatible = "ralink,mt7620a-memc", "ralink,rt3050-memc";
 			reg = <0x300 0x100>;
 
+			resets = <&rstctrl 20>;
+			reset-names = "mc";
+
 			interrupt-parent = <&intc>;
 			interrupts = <3>;
 		};
 
 		gpio0: gpio@600 {
-			compatible = "ralink,rt2880-gpio";
+			compatible = "ralink,mt7620a-gpio", "ralink,rt2880-gpio";
 			reg = <0x600 0x34>;
+
+			resets = <&rstctrl 13>;
+			reset-names = "pio";
 
 			interrupt-parent = <&intc>;
 			interrupts = <6>;
-			interrupt-controller;
-			#interrupt-cells = <2>;
 
 			gpio-controller;
 			#gpio-cells = <2>;
 
 			ngpios = <24>;
+			ralink,gpio-base = <0>;
 			ralink,register-map = [ 00 04 08 0c
 						20 24 28 2c
 						30 34 ];
 		};
 
 		gpio1: gpio@638 {
-			compatible = "ralink,rt2880-gpio";
+			compatible = "ralink,mt7620a-gpio", "ralink,rt2880-gpio";
 			reg = <0x638 0x24>;
 
 			interrupt-parent = <&intc>;
 			interrupts = <6>;
-			interrupt-controller;
-			#interrupt-cells = <2>;
 
 			gpio-controller;
 			#gpio-cells = <2>;
 
 			ngpios = <16>;
+			ralink,gpio-base = <24>;
 			ralink,register-map = [ 00 04 08 0c
 						10 14 18 1c
 						20 24 ];
@@ -130,18 +129,17 @@
 		};
 
 		gpio2: gpio@660 {
-			compatible = "ralink,rt2880-gpio";
+			compatible = "ralink,mt7620a-gpio", "ralink,rt2880-gpio";
 			reg = <0x660 0x24>;
 
 			interrupt-parent = <&intc>;
 			interrupts = <6>;
-			interrupt-controller;
-			#interrupt-cells = <2>;
 
 			gpio-controller;
 			#gpio-cells = <2>;
 
 			ngpios = <32>;
+			ralink,gpio-base = <40>;
 			ralink,register-map = [ 00 04 08 0c
 						10 14 18 1c
 						20 24 ];
@@ -150,18 +148,17 @@
 		};
 
 		gpio3: gpio@688 {
-			compatible = "ralink,rt2880-gpio";
+			compatible = "ralink,mt7620a-gpio", "ralink,rt2880-gpio";
 			reg = <0x688 0x24>;
 
 			interrupt-parent = <&intc>;
 			interrupts = <6>;
-			interrupt-controller;
-			#interrupt-cells = <2>;
 
 			gpio-controller;
 			#gpio-cells = <2>;
 
 			ngpios = <1>;
+			ralink,gpio-base = <72>;
 			ralink,register-map = [ 00 04 08 0c
 						10 14 18 1c
 						20 24 ];
@@ -173,9 +170,7 @@
 			compatible = "ralink,rt2880-i2c";
 			reg = <0x900 0x100>;
 
-			clocks = <&sysc MT7620_CLK_I2C>;
-
-			resets = <&sysc 16>;
+			resets = <&rstctrl 16>;
 			reset-names = "i2c";
 
 			#address-cells = <1>;
@@ -188,12 +183,10 @@
 		};
 
 		spi0: spi@b00 {
-			compatible = "ralink,rt2880-spi";
+			compatible = "ralink,mt7620a-spi", "ralink,rt2880-spi";
 			reg = <0xb00 0x40>;
 
-			clocks = <&sysc MT7620_CLK_SPI1>;
-
-			resets = <&sysc 18>;
+			resets = <&rstctrl 18>;
 			reset-names = "spi";
 
 			#address-cells = <1>;
@@ -209,9 +202,7 @@
 			compatible = "ralink,rt2880-spi";
 			reg = <0xb40 0x60>;
 
-			clocks = <&sysc MT7620_CLK_SPI2>;
-
-			resets = <&sysc 18>;
+			resets = <&rstctrl 18>;
 			reset-names = "spi";
 
 			#address-cells = <1>;
@@ -223,13 +214,12 @@
 			pinctrl-0 = <&spi_cs1>;
 		};
 
-		uartlite: serial@c00 {
+		uartlite: uartlite@c00 {
 			compatible = "ralink,mt7620a-uart", "ralink,rt2880-uart", "ns16550a";
 			reg = <0xc00 0x100>;
 
-			clocks = <&sysc MT7620_CLK_UARTLITE>;
-
-			resets = <&sysc 19>;
+			resets = <&rstctrl 19>;
+			reset-names = "uartl";
 
 			interrupt-parent = <&intc>;
 			interrupts = <12>;
@@ -241,8 +231,11 @@
 		};
 
 		systick: systick@d00 {
-			compatible = "ralink,cevt-systick";
+			compatible = "ralink,mt7620a-systick", "ralink,cevt-systick";
 			reg = <0xd00 0x10>;
+
+			resets = <&rstctrl 28>;
+			reset-names = "intc";
 
 			interrupt-parent = <&cpuintc>;
 			interrupts = <7>;
@@ -293,14 +286,26 @@
 		};
 	};
 
+	rstctrl: rstctrl {
+		compatible = "ralink,mt7620a-reset", "ralink,rt2880-reset";
+		#reset-cells = <1>;
+	};
+
+	clkctrl: clkctrl {
+		compatible = "ralink,rt2880-clock";
+		#clock-cells = <1>;
+	};
+
 	usbphy: usbphy {
 		compatible = "mediatek,mt7620-usbphy";
 		#phy-cells = <0>;
 
 		ralink,sysctl = <&sysc>;
-		/* usb phy reset is only controled by RSTCTRL bit 25 */
-		resets = <&sysc 25>, <&sysc 22>;
+		resets = <&rstctrl 22 &rstctrl 25>;
 		reset-names = "host", "device";
+
+		clocks = <&clkctrl 22 &clkctrl 25>;
+		clock-names = "host", "device";
 	};
 
 	ethernet: ethernet@10100000 {
@@ -313,7 +318,7 @@
 		interrupt-parent = <&cpuintc>;
 		interrupts = <5>;
 
-		resets = <&sysc 21>, <&sysc 23>;
+		resets = <&rstctrl 21 &rstctrl 23>;
 		reset-names = "fe", "esw";
 
 		mediatek,switch = <&gsw>;
@@ -323,8 +328,8 @@
 		compatible = "mediatek,mt7620-gsw";
 		reg = <0x10110000 0x8000>;
 
-		resets = <&sysc 24>;
-		reset-names = "ephy";
+		resets = <&rstctrl 23>;
+		reset-names = "esw";
 
 		interrupt-parent = <&intc>;
 		interrupts = <17>;
@@ -371,10 +376,8 @@
 	};
 
 	wmac: wmac@10180000 {
-		compatible = "ralink,rt7620-wifi", "ralink,rt2880-wifi";
+		compatible = "ralink,rt7620-wmac", "ralink,rt2880-wmac";
 		reg = <0x10180000 0x40000>;
-
-		clocks = <&sysc MT7620_CLK_WMAC>;
 
 		interrupt-parent = <&cpuintc>;
 		interrupts = <6>;

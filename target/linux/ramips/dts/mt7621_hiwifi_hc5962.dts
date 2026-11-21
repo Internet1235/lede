@@ -2,18 +2,16 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
-#include <dt-bindings/leds/common.h>
 
 / {
 	compatible = "hiwifi,hc5962", "mediatek,mt7621-soc";
 	model = "HiWiFi HC5962";
 
 	aliases {
-		label-mac-device = &gmac0;
-		led-boot = &led_status_red;
-		led-failsafe = &led_status_red;
-		led-running = &led_status_white;
-		led-upgrade = &led_status_white;
+		led-boot = &led_system;
+		led-failsafe = &led_system;
+		led-running = &led_status;
+		led-upgrade = &led_status;
 	};
 
 	chosen {
@@ -23,15 +21,13 @@
 	leds {
 		compatible = "gpio-leds";
 
-		led_status_white: led-0 {
-			color = <LED_COLOR_ID_WHITE>;
-			function = LED_FUNCTION_STATUS;
+		led_status: status {
+			label = "white:status";
 			gpios = <&gpio 6 GPIO_ACTIVE_LOW>;
 		};
 
-		led_status_red: led-1 {
-			color = <LED_COLOR_ID_RED>;
-			function = LED_FUNCTION_STATUS;
+		led_system: system {
+			label = "red:system";
 			gpios = <&gpio 7 GPIO_ACTIVE_LOW>;
 			panic-indicator;
 		};
@@ -84,24 +80,10 @@
 			read-only;
 		};
 
-		partition@100000 {
+		factory: partition@100000 {
 			label = "factory";
 			reg = <0x100000 0x40000>;
 			read-only;
-
-			nvmem-layout {
-				compatible = "fixed-layout";
-				#address-cells = <1>;
-				#size-cells = <1>;
-
-				eeprom_factory_0: eeprom@0 {
-					reg = <0x0 0x400>;
-				};
-
-				eeprom_factory_8000: eeprom@8000 {
-					reg = <0x8000 0x200>;
-				};
-			};
 		};
 
 		partition@140000 {
@@ -118,18 +100,6 @@
 			label = "bdinfo";
 			reg = <0x21c0000 0x80000>;
 			read-only;
-
-			nvmem-layout {
-				compatible = "fixed-layout";
-				#address-cells = <1>;
-				#size-cells = <1>;
-
-				macaddr_bdinfo_18a: macaddr@18a {
-					compatible = "mac-base";
-					reg = <0x18a 0x11>;
-					#nvmem-cell-cells = <1>;
-				};
-			};
 		};
 
 		ubiconcat1: partition@2240000 {
@@ -144,63 +114,68 @@
 };
 
 &pcie0 {
-	wifi@0,0 {
-		compatible = "mediatek,mt76";
+	mt76@0,0 {
 		reg = <0x0000 0 0 0 0>;
-		nvmem-cells = <&eeprom_factory_0>, <&macaddr_bdinfo_18a 0>;
-		nvmem-cell-names = "eeprom", "mac-address";
+		mediatek,mtd-eeprom = <&factory 0x0000>;
 		ieee80211-freq-limit = <2400000 2500000>;
 	};
 };
 
 &pcie1 {
-	wifi@0,0 {
-		compatible = "mediatek,mt76";
+	mt76@0,0 {
 		reg = <0x0000 0 0 0 0>;
-		nvmem-cells = <&eeprom_factory_8000>, <&macaddr_bdinfo_18a 0>;
-		nvmem-cell-names = "eeprom", "mac-address";
+		mediatek,mtd-eeprom = <&factory 0x8000>;
 		ieee80211-freq-limit = <5000000 6000000>;
 	};
 };
 
-&gmac0 {
-	nvmem-cells = <&macaddr_bdinfo_18a 0>;
-	nvmem-cell-names = "mac-address";
+&switch0 {
+	/* must delete compatible property */
+	/delete-property/ compatible;
 };
 
-&gmac1 {
-	status = "okay";
-	label = "wan";
-	phy-handle = <&ethphy4>;
-
-	nvmem-cells = <&macaddr_bdinfo_18a 1>;
-	nvmem-cell-names = "mac-address";
-};
-
-&ethphy4 {
-	/delete-property/ interrupts;
+&hnat {
+        mtketh-wan = "eth1";
+        mtketh-ppd = "eth0";
+        mtketh-lan = "eth0";
+	ext-devices = "wlan0","wlan1","rax0","ra0", "rai0","apclii0","apclix0", "apcli0";
+        mtketh-max-gmac = <2>;
+        status = "okay";
 };
 
 &gsw {
+	mediatek,mdio = <&mdio>;
+	mediatek,portmap = "llllw";
+	mediatek,mcm;
+	mt7530,direct-phy-access;
 
-		port@1 {
+	resets = <&rstctrl 2>;
+	reset-names = "mcm";
+
+	port5: port@5 {
 		compatible = "mediatek,mt753x-port";
-			status = "okay";
-			label = "lan1";
+		reg = <5>;
+		phy-mode = "rgmii";
+		fixed-link {
+			speed = <1000>;
+			full-duplex;
 		};
+	};
 
-		port@2 {
+	port6: port@6 {
 		compatible = "mediatek,mt753x-port";
-			status = "okay";
-			label = "lan2";
+		reg = <6>;
+		phy-mode = "rgmii";
+		fixed-link {
+			speed = <1000>;
+			full-duplex;
 		};
+	};
 
-		port@3 {
-		compatible = "mediatek,mt753x-port";
-			status = "okay";
-			label = "lan3";
-		};
-
+	mdio-bus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+	};
 };
 
 &state_default {

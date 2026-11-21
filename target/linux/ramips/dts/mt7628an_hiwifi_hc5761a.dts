@@ -6,39 +6,27 @@
 	compatible = "hiwifi,hc5761a", "mediatek,mt7628an-soc";
 	model = "HiWiFi HC5761A";
 
-	aliases {
-		label-mac-device = &ethernet;
-		led-boot = &led_status;
-		led-failsafe = &led_status;
-		led-running = &led_status;
-		led-upgrade = &led_status;
-	};
-
 	leds {
 		compatible = "gpio-leds";
 
-		led_status: led-0 {
-			color = <LED_COLOR_ID_BLUE>;
-			function = LED_FUNCTION_STATUS;
+		led_system: system {
+			label = "blue:system";
 			gpios = <&gpio 37 GPIO_ACTIVE_HIGH>;
 		};
 
-		led-1 {
-			color = <LED_COLOR_ID_BLUE>;
-			function = LED_FUNCTION_WAN;
+		internet {
+			label = "blue:internet";
 			gpios = <&gpio 1 GPIO_ACTIVE_HIGH>;
 		};
 
-		led-2 {
-			color = <LED_COLOR_ID_BLUE>;
-			function = LED_FUNCTION_WLAN_2GHZ;
+		wlan2g {
+			label = "blue:wlan2g";
 			gpios = <&gpio 44 GPIO_ACTIVE_HIGH>;
 			linux,default-trigger = "phy0tpt";
 		};
 
-		led-3 {
-			color = <LED_COLOR_ID_BLUE>;
-			function = LED_FUNCTION_WLAN_5GHZ;
+		wlan5g {
+			label = "blue:wlan5g";
 			gpios = <&gpio 40 GPIO_ACTIVE_HIGH>;
 			linux,default-trigger = "phy1tpt";
 		};
@@ -46,6 +34,7 @@
 
 	gpio_export {
 		compatible = "gpio-export";
+		#size-cells = <0>;
 
 		usb_power {
 			gpio-export,name = "usb_power";
@@ -55,30 +44,9 @@
 	};
 };
 
-&esw {
-	mediatek,portmap = <0x2f>;
-	mediatek,portdisable = <0x2c>;
-};
-
-&pinctrl {
-	ephy-analog;
-
-	sdxc_router_mode: sdxc_router_mode {
-		groups = "esd", "gpio", "i2c", "sdmode", "uart1";
-		function = "gpio";
-	};
-};
-
-&sdhci {
-	status = "okay";
-
-	pinctrl-0 = <&sdxc_router_mode>;
-	pinctrl-1 = <&sdxc_router_mode>;
-};
-
 &state_default {
 	gpio {
-		groups = "i2s", "refclk", "wdt", "p2led_an", "p3led_an", "wled_an";
+		groups = "i2c", "refclk", "wdt", "p2led_an", "p3led_an", "wled_an";
 		function = "gpio";
 	};
 };
@@ -89,10 +57,8 @@
 
 &pcie0 {
 	wifi@0,0 {
-		compatible = "mediatek,mt76";
 		reg = <0x0000 0 0 0 0>;
-		nvmem-cells = <&eeprom_factory_8000>, <&macaddr_bdinfo_18a 0>;
-		nvmem-cell-names = "eeprom", "mac-address";
+		mediatek,mtd-eeprom = <&factory 0x8000>;
 		ieee80211-freq-limit = <5000000 6000000>;
 	};
 };

@@ -19,58 +19,68 @@
 	};
 };
 
+&ethernet {
+ 	pinctrl-0 = <&mdio_pins>, <&rgmii1_pins>;
+ };
+
 &gmac0 {
-	nvmem-cells = <&macaddr_factory_22 0>;
+	nvmem-cells = <&macaddr_factory_22>;
 	nvmem-cell-names = "mac-address";
-	openwrt,netdev-name = "dsa";
+};
+
+&gmac1 {
+	status = "disabled";
+};
+
+&switch0 {
+	/* must delete compatible property */
+	/delete-property/ compatible;
+};
+
+&hnat {
+        mtketh-wan = "eth0.2";
+        mtketh-ppd = "eth0.1";
+        mtketh-lan = "eth0";
+	ext-devices = "wlan0","wlan1","rax0","ra0", "rai0","apclii0","apclix0", "apcli0";
+        mtketh-max-gmac = <1>;
+        status = "okay";
 };
 
 &gsw {
+	mediatek,mdio = <&mdio>;
+	mediatek,portmap = "wllll";
+	mediatek,mcm;
+	mt7530,direct-phy-access;
 
-		port@0 {
+	resets = <&rstctrl 2>;
+	reset-names = "mcm";
+
+	port5: port@5 {
 		compatible = "mediatek,mt753x-port";
-			status = "okay";
-			openwrt,netdev-name = "eth0";
-			/delete-property/ label;
+		reg = <5>;
+		phy-mode = "rgmii";
+		fixed-link {
+			speed = <1000>;
+			full-duplex;
 		};
+	};
 
-		port@1 {
+	port6: port@6 {
 		compatible = "mediatek,mt753x-port";
-			status = "okay";
-			openwrt,netdev-name = "eth1";
-			nvmem-cells = <&macaddr_factory_22 1>;
-			nvmem-cell-names = "mac-address";
-			/delete-property/ label;
+		reg = <6>;
+		phy-mode = "rgmii";
+		fixed-link {
+			speed = <1000>;
+			full-duplex;
 		};
+	};
 
-		port@2 {
-		compatible = "mediatek,mt753x-port";
-			status = "okay";
-			openwrt,netdev-name = "eth2";
-			nvmem-cells = <&macaddr_factory_22 2>;
-			nvmem-cell-names = "mac-address";
-			/delete-property/ label;
-		};
-
-		port@3 {
-		compatible = "mediatek,mt753x-port";
-			status = "okay";
-			openwrt,netdev-name = "eth3";
-			nvmem-cells = <&macaddr_factory_22 3>;
-			nvmem-cell-names = "mac-address";
-			/delete-property/ label;
-		};
-
-		port@4 {
-		compatible = "mediatek,mt753x-port";
-			status = "okay";
-			openwrt,netdev-name = "eth4";
-			nvmem-cells = <&macaddr_factory_22 4>;
-			nvmem-cell-names = "mac-address";
-			/delete-property/ label;
-		};
-
+	mdio-bus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+	};
 };
+
 
 &nand {
 	status = "okay";
@@ -92,26 +102,19 @@
 			read-only;
 		};
 
-		partition@e0000 {
+		factory: partition@e0000 {
 			label = "factory";
 			reg = <0xe0000 0x60000>;
-
-			nvmem-layout {
-				compatible = "fixed-layout";
-				#address-cells = <1>;
-				#size-cells = <1>;
-
-				macaddr_factory_22: macaddr@22 {
-					compatible = "mac-base";
-					reg = <0x22 0x6>;
-					#nvmem-cell-cells = <1>;
-				};
-			};
 		};
 
 		partition@140000 {
-			label = "kernel";
-			reg = <0x140000 0x600000>;
+			label = "kernel1";
+			reg = <0x140000 0x300000>;
+		};
+
+		partition@440000 {
+			label = "kernel2";
+			reg = <0x440000 0x300000>;
 		};
 
 		partition@740000 {
@@ -123,7 +126,7 @@
 
 &state_default {
 	gpio {
-		groups = "uart2", "uart3", "pcie", "jtag";
+		groups = "uart2", "uart3", "pcie", "rgmii2", "jtag";
 		function = "gpio";
 	};
 };
@@ -156,10 +159,16 @@
 	};
 };
 
-&usb_phy {
+&xhci {
 	status = "disabled";
 };
 
-&xhci {
-	status = "disabled";
+&factory {
+	compatible = "nvmem-cells";
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	macaddr_factory_22: macaddr@22 {
+		reg = <0x22 0x6>;
+	};
 };

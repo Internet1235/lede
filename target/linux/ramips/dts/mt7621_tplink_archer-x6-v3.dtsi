@@ -4,7 +4,6 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
-#include <dt-bindings/leds/common.h>
 
 / {
 	aliases {
@@ -22,14 +21,14 @@
 	keys {
 		compatible = "gpio-keys";
 
-		button-wps {
+		wps {
 			label = "wps";
-			gpios = <&gpio 10 GPIO_ACTIVE_LOW>;
+			gpios = <&gpio 28 GPIO_ACTIVE_LOW>;
 			debounce-interval = <60>;
 			linux,code = <KEY_WPS_BUTTON>;
 		};
 
-		button-reset {
+		reset {
 			label = "reset";
 			gpios = <&gpio 8 GPIO_ACTIVE_LOW>;
 			debounce-interval = <60>;
@@ -40,43 +39,35 @@
 	leds {
 		compatible = "gpio-leds";
 
-		led_power: led-power {
-			color = <LED_COLOR_ID_GREEN>;
-			function = LED_FUNCTION_POWER;
+		led_power: power {
+			label = "green:power";
 			gpios = <&gpio 4 GPIO_ACTIVE_LOW>;
 		};
 
-		led-wan-amber {
-			color = <LED_COLOR_ID_AMBER>;
-			function = LED_FUNCTION_WAN;
+		wan_orange {
+			label = "orange:wan";
 			gpios = <&gpio 14 GPIO_ACTIVE_LOW>;
 		};
 
-		led-lan {
-			color = <LED_COLOR_ID_GREEN>;
-			function = LED_FUNCTION_LAN;
+		lan {
+			label = "green:lan";
 			gpios = <&gpio 15 GPIO_ACTIVE_LOW>;
 		};
 
-		led-wifi5g {
-			color = <LED_COLOR_ID_GREEN>;
-			function = LED_FUNCTION_WLAN;
-			function-enumerator = <5>;
+		wifi5g {
+			label = "green:wifi5g";
 			gpios = <&gpio 16 GPIO_ACTIVE_LOW>;
 			linux,default-trigger = "phy1tpt";
 		};
 
-		led-wifi2g {
-			color = <LED_COLOR_ID_GREEN>;
-			function = LED_FUNCTION_WLAN;
-			function-enumerator = <2>;
+		wifi2g {
+			label = "green:wifi2g";
 			gpios = <&gpio 18 GPIO_ACTIVE_LOW>;
 			linux,default-trigger = "phy0tpt";
 		};
 
-		led-wan-green {
-			color = <LED_COLOR_ID_GREEN>;
-			function = LED_FUNCTION_WAN;
+		wan_green {
+			label = "green:wan";
 			gpios = <&gpio 45 GPIO_ACTIVE_LOW>;
 		};
 	};
@@ -107,42 +98,16 @@
 				reg = <0x40000 0xf60000>;
 			};
 
-			partition@fa0000 {
+			config: partition@fa0000 {
 				label = "config";
 				reg = <0xfa0000 0x50000>;
 				read-only;
-
-				nvmem-layout {
-					compatible = "fixed-layout";
-					#address-cells = <1>;
-					#size-cells = <1>;
-
-					macaddr_config_8: macaddr@8 {
-						compatible = "mac-base";
-						reg = <0x8 0x6>;
-						#nvmem-cell-cells = <1>;
-					};
-				};
 			};
 
-			partition@ff0000 {
+			radio: partition@ff0000 {
 				label = "radio";
 				reg = <0xff0000 0x10000>;
 				read-only;
-
-				nvmem-layout {
-					compatible = "fixed-layout";
-					#address-cells = <1>;
-					#size-cells = <1>;
-
-					eeprom_radio_0: eeprom@0 {
-						reg = <0x0 0x400>;
-					};
-
-					eeprom_radio_8000: eeprom@8000 {
-						reg = <0x8000 0x4da8>;
-					};
-				};
 			};
 		};
 	};
@@ -155,6 +120,11 @@
 	};
 };
 
+&ethernet {
+	pinctrl-names = "default";
+	pinctrl-0 = <&rgmii1_pins &mdio_pins>;
+};
+
 &pcie {
 	status = "okay";
 };
@@ -163,8 +133,10 @@
 	wifi@0,0 {
 		compatible = "mediatek,mt76";
 		reg = <0x0000 0 0 0 0>;
-		nvmem-cells = <&eeprom_radio_0>, <&macaddr_config_8 1>;
-		nvmem-cell-names = "eeprom", "mac-address";
+		mediatek,mtd-eeprom = <&radio 0x0>;
+		nvmem-cells = <&macaddr_config_8>;
+		nvmem-cell-names = "mac-address";
+		mac-address-increment = <1>;
 		ieee80211-freq-limit = <2400000 2500000>;
 	};
 };
@@ -173,8 +145,10 @@
 	wifi@0,0 {
 		compatible = "mediatek,mt76";
 		reg = <0x0000 0 0 0 0>;
-		nvmem-cells = <&eeprom_radio_8000>, <&macaddr_config_8 2>;
-		nvmem-cell-names = "eeprom", "mac-address";
+		mediatek,mtd-eeprom = <&radio 0x8000>;
+		nvmem-cells = <&macaddr_config_8>;
+		nvmem-cell-names = "mac-address";
+		mac-address-increment = <2>;
 		ieee80211-freq-limit = <5000000 6000000>;
 	};
 };
@@ -184,40 +158,45 @@
 };
 
 &gmac0 {
-	nvmem-cells = <&macaddr_config_8 0>;
+	nvmem-cells = <&macaddr_config_8>;
 	nvmem-cell-names = "mac-address";
 };
 
-&gsw {
-
+&switch0 {
+	ports {
 		port@0 {
-		compatible = "mediatek,mt753x-port";
 			status = "okay";
 			label = "wan";
 		};
 
 		port@1 {
-		compatible = "mediatek,mt753x-port";
 			status = "okay";
 			label = "lan1";
 		};
 
 		port@2 {
-		compatible = "mediatek,mt753x-port";
 			status = "okay";
 			label = "lan2";
 		};
 
 		port@3 {
-		compatible = "mediatek,mt753x-port";
 			status = "okay";
 			label = "lan3";
 		};
 
 		port@4 {
-		compatible = "mediatek,mt753x-port";
 			status = "okay";
 			label = "lan4";
 		};
+	};
+};
 
+&config {
+	compatible = "nvmem-cells";
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	macaddr_config_8: macaddr@8 {
+		reg = <0x8 0x6>;
+	};
 };
