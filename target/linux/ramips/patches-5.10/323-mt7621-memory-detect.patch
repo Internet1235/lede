@@ -42,6 +42,16 @@ Signed-off-by: Chuanhong Guo <gch981213@gmail.com>
  
  #define MT7621_CHIP_NAME0		0x3637544D
  #define MT7621_CHIP_NAME1		0x20203132
+--- a/arch/mips/ralink/common.h
++++ b/arch/mips/ralink/common.h
+@@ -17,6 +17,7 @@ struct ralink_soc_info {
+ 	unsigned long mem_size;
+ 	unsigned long mem_size_min;
+ 	unsigned long mem_size_max;
++	void (*mem_detect)(void);
+ };
+ extern struct ralink_soc_info soc_info;
+ 
 --- a/arch/mips/ralink/mt7621.c
 +++ b/arch/mips/ralink/mt7621.c
 @@ -9,11 +9,13 @@
@@ -106,16 +116,6 @@ Signed-off-by: Chuanhong Guo <gch981213@gmail.com>
  	rt2880_pinmux_data = mt7621_pinmux_data;
  
  	soc_dev_init(soc_info, rev);
---- a/arch/mips/ralink/common.h
-+++ b/arch/mips/ralink/common.h
-@@ -17,6 +17,7 @@ struct ralink_soc_info {
- 	unsigned long mem_size;
- 	unsigned long mem_size_min;
- 	unsigned long mem_size_max;
-+	void (*mem_detect)(void);
- };
- extern struct ralink_soc_info soc_info;
- 
 --- a/arch/mips/ralink/of.c
 +++ b/arch/mips/ralink/of.c
 @@ -85,6 +85,8 @@ void __init plat_mem_setup(void)

@@ -27,7 +27,7 @@ Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
 
 --- a/tools/bpf/resolve_btfids/Makefile
 +++ b/tools/bpf/resolve_btfids/Makefile
-@@ -23,6 +23,8 @@
+@@ -23,6 +23,8 @@ CC       = $(HOSTCC)
  LD       = $(HOSTLD)
  ARCH     = $(HOSTARCH)
  RM      ?= rm
@@ -36,7 +36,7 @@ Signed-off-by: coolsnowwolf <coolsnowwolf@gmail.com>
  
  OUTPUT ?= $(srctree)/tools/bpf/resolve_btfids/
  
-@@ -45,9 +47,9 @@
+@@ -45,9 +47,9 @@ $(SUBCMDOBJ): fixdep FORCE | $(OUTPUT)/l
  	$(Q)$(MAKE) -C $(SUBCMD_SRC) OUTPUT=$(abspath $(dir $@))/ $(abspath $@)
  
  $(BPFOBJ): $(wildcard $(LIBBPF_SRC)/*.[ch] $(LIBBPF_SRC)/Makefile) | $(OUTPUT)/libbpf

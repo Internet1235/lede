@@ -1,6 +1,6 @@
---- a/net/core/skbuff.c	2022-05-18 11:03:02.361259000 +0800
-+++ b/net/core/skbuff.c	2022-05-18 11:02:09.832117270 +0800
-@@ -70,7 +70,7 @@
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -71,7 +71,7 @@
  #include <net/xfrm.h>
  #include <net/mpls.h>
  #include <net/mptcp.h>
@@ -9,7 +9,7 @@
  #include <linux/uaccess.h>
  #include <trace/events/skb.h>
  #include <linux/highmem.h>
-@@ -707,6 +707,14 @@
+@@ -728,6 +728,14 @@ static void skb_release_all(struct sk_bu
  
  void __kfree_skb(struct sk_buff *skb)
  {
@@ -24,7 +24,7 @@
  	skb_release_all(skb);
  	kfree_skbmem(skb);
  }
-@@ -1665,7 +1673,15 @@
+@@ -1700,7 +1708,15 @@ int pskb_expand_head(struct sk_buff *skb
  	memcpy((struct skb_shared_info *)(data + size),
  	       skb_shinfo(skb),
  	       offsetof(struct skb_shared_info, frags[skb_shinfo(skb)->nr_frags]));
@@ -40,32 +40,9 @@
 +	
  	/*
  	 * if shinfo is shared we must drop the old head gracefully, but if it
- 	 * is not we can just drop the old head and let the existing refcount 
- 
---- a/include/net/netfilter/nf_hnat.h
-+++ b/include/net/netfilter/nf_hnat.h
-@@ -0,0 +1,17 @@
-+#include <linux/netdevice.h>
-+
-+#define HNAT_PATH_ETHERNET      BIT(0)
-+#define HNAT_PATH_VLAN          BIT(1)
-+#define HNAT_PATH_PPPOE         BIT(2)
-+#define HNAT_PATH_DSLITE        BIT(3)
-+
-+struct hnat_hw_path {
-+        const struct net_device *virt_dev;
-+        const struct net_device *real_dev;
-+        u32 flags;
-+        u8 eth_src[ETH_ALEN];
-+        u8 eth_dest[ETH_ALEN];
-+        u16 vlan_proto;
-+        u16 vlan_id;
-+        u16 pppoe_sid;
-+};
-
-
---- a/drivers/net/ppp/ppp_generic.c	2022-05-19 13:46:26.673641000 +0800
-+++ b/drivers/net/ppp/ppp_generic.c	2022-05-19 13:58:49.992600593 +0800
+ 	 * is not we can just drop the old head and let the existing refcount
+--- a/drivers/net/ppp/ppp_generic.c
++++ b/drivers/net/ppp/ppp_generic.c
 @@ -52,7 +52,7 @@
  #include <linux/nsproxy.h>
  #include <net/net_namespace.h>
@@ -75,7 +52,7 @@
  #define PPP_VERSION	"2.4.2"
  
  /*
-@@ -1487,6 +1487,26 @@
+@@ -1516,6 +1516,26 @@ static int ppp_fill_forward_path(struct
  	return chan->ops->fill_forward_path(ctx, path, chan);
  }
  
@@ -102,7 +79,7 @@
  static const struct net_device_ops ppp_netdev_ops = {
  	.ndo_init	 = ppp_dev_init,
  	.ndo_uninit      = ppp_dev_uninit,
-@@ -1494,6 +1514,7 @@
+@@ -1523,6 +1543,7 @@ static const struct net_device_ops ppp_n
  	.ndo_do_ioctl    = ppp_net_ioctl,
  	.ndo_get_stats64 = ppp_get_stats64,
  	.ndo_fill_forward_path = ppp_fill_forward_path,
@@ -110,9 +87,8 @@
  };
  
  static struct device_type ppp_type = {
-
---- a/drivers/net/ppp/pppoe.c	2022-05-19 13:46:26.673641000 +0800
-+++ b/drivers/net/ppp/pppoe.c	2022-05-19 14:00:15.419387398 +0800
+--- a/drivers/net/ppp/pppoe.c
++++ b/drivers/net/ppp/pppoe.c
 @@ -79,7 +79,7 @@
  #include <net/sock.h>
  
@@ -122,7 +98,7 @@
  #define PPPOE_HASH_BITS 4
  #define PPPOE_HASH_SIZE (1 << PPPOE_HASH_BITS)
  #define PPPOE_HASH_MASK	(PPPOE_HASH_SIZE - 1)
-@@ -994,9 +994,33 @@
+@@ -1002,9 +1002,33 @@ static int pppoe_fill_forward_path(struc
  	return 0;
  }
  
@@ -156,10 +132,9 @@
  };
  
  static int pppoe_recvmsg(struct socket *sock, struct msghdr *m,
-
---- a/include/linux/netdevice.h	2022-05-19 13:46:28.677790000 +0800
-+++ b/include/linux/netdevice.h	2022-05-19 13:56:13.845845770 +0800
-@@ -1003,7 +1003,7 @@
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1031,7 +1031,7 @@ struct netdev_net_notifier {
  	struct list_head list;
  	struct notifier_block *nb;
  };
@@ -168,7 +143,7 @@
  /*
   * This structure defines the management hooks for network devices.
   * The following hooks can be defined; unless noted otherwise, they are
-@@ -1545,6 +1545,7 @@
+@@ -1582,6 +1582,7 @@ struct net_device_ops {
  	struct net_device *	(*ndo_get_peer_dev)(struct net_device *dev);
  	int                     (*ndo_fill_forward_path)(struct net_device_path_ctx *ctx,
                                                           struct net_device_path *path);
@@ -176,10 +151,9 @@
  };
  
  /**
-
---- a/include/linux/ppp_channel.h	2022-05-19 13:46:26.677641000 +0800
-+++ b/include/linux/ppp_channel.h	2022-05-19 14:01:01.777387085 +0800
-@@ -31,6 +31,7 @@
+--- a/include/linux/ppp_channel.h
++++ b/include/linux/ppp_channel.h
+@@ -31,6 +31,7 @@ struct ppp_channel_ops {
  	int	(*fill_forward_path)(struct net_device_path_ctx *,
  				     struct net_device_path *,
  				     const struct ppp_channel *);
@@ -187,9 +161,8 @@
  };
  
  struct ppp_channel {
-
---- a/net/8021q/vlan_dev.c	2022-05-19 13:46:26.665640000 +0800
-+++ b/net/8021q/vlan_dev.c	2022-05-19 14:03:23.747097484 +0800
+--- a/net/8021q/vlan_dev.c
++++ b/net/8021q/vlan_dev.c
 @@ -31,6 +31,8 @@
  #include "vlanproc.h"
  #include <linux/if_vlan.h>
@@ -199,7 +172,7 @@
  
  /*
   *	Create the VLAN header for an arbitrary protocol layer
-@@ -790,6 +792,24 @@
+@@ -782,6 +784,24 @@ static int vlan_dev_fill_forward_path(st
  	return 0;
  }
  
@@ -224,7 +197,7 @@
  static const struct ethtool_ops vlan_ethtool_ops = {
  	.get_link_ksettings	= vlan_ethtool_get_link_ksettings,
  	.get_drvinfo	        = vlan_ethtool_get_drvinfo,
-@@ -829,6 +849,7 @@
+@@ -821,6 +841,7 @@ static const struct net_device_ops vlan_
  	.ndo_fix_features	= vlan_dev_fix_features,
  	.ndo_get_iflink		= vlan_dev_get_iflink,
  	.ndo_fill_forward_path	= vlan_dev_fill_forward_path,
@@ -232,9 +205,8 @@
  };
  
  static void vlan_dev_free(struct net_device *dev)
-
---- a/net/ipv6/ip6_tunnel.c	2022-05-19 13:46:28.161751000 +0800
-+++ b/net/ipv6/ip6_tunnel.c	2022-05-19 14:05:25.500612911 +0800
+--- a/net/ipv6/ip6_tunnel.c
++++ b/net/ipv6/ip6_tunnel.c
 @@ -56,7 +56,7 @@
  #include <net/net_namespace.h>
  #include <net/netns/generic.h>
@@ -244,7 +216,7 @@
  MODULE_AUTHOR("Ville Nuorvala");
  MODULE_DESCRIPTION("IPv6 tunneling device");
  MODULE_LICENSE("GPL");
-@@ -1937,6 +1937,23 @@
+@@ -1950,6 +1950,23 @@ int ip6_tnl_change_mtu(struct net_device
  }
  EXPORT_SYMBOL(ip6_tnl_change_mtu);
  
@@ -268,7 +240,7 @@
  int ip6_tnl_get_iflink(const struct net_device *dev)
  {
  	struct ip6_tnl *t = netdev_priv(dev);
-@@ -2006,6 +2023,7 @@
+@@ -2019,6 +2036,7 @@ static const struct net_device_ops ip6_t
  	.ndo_change_mtu = ip6_tnl_change_mtu,
  	.ndo_get_stats	= ip6_get_stats,
  	.ndo_get_iflink = ip6_tnl_get_iflink,
@@ -276,9 +248,8 @@
  };
  
  #define IPXIPX_FEATURES (NETIF_F_SG |		\
-		
---- a/include/linux/mdio.h	2022-03-28 15:57:11.000000000 +0800
-+++ b/include/linux/mdio.h	2022-12-27 16:18:35.806004570 +0800
+--- a/include/linux/mdio.h
++++ b/include/linux/mdio.h
 @@ -5,7 +5,7 @@
   */
  #ifndef __LINUX_MDIO_H__
@@ -299,7 +270,7 @@
  struct gpio_desc;
  struct mii_bus;
  struct reset_control;
-@@ -342,6 +344,16 @@
+@@ -342,6 +344,16 @@ static inline u32 mdiobus_c45_addr(int d
  	return MII_ADDR_C45 | devad << MII_DEVADDR_C45_SHIFT | regnum;
  }
  
@@ -316,5 +287,23 @@
  static inline int __mdiobus_c45_read(struct mii_bus *bus, int prtad, int devad,
  				     u16 regnum)
  {
-
-
+--- /dev/null
++++ b/include/net/netfilter/nf_hnat.h
+@@ -0,0 +1,17 @@
++#include <linux/netdevice.h>
++
++#define HNAT_PATH_ETHERNET      BIT(0)
++#define HNAT_PATH_VLAN          BIT(1)
++#define HNAT_PATH_PPPOE         BIT(2)
++#define HNAT_PATH_DSLITE        BIT(3)
++
++struct hnat_hw_path {
++        const struct net_device *virt_dev;
++        const struct net_device *real_dev;
++        u32 flags;
++        u8 eth_src[ETH_ALEN];
++        u8 eth_dest[ETH_ALEN];
++        u16 vlan_proto;
++        u16 vlan_id;
++        u16 pppoe_sid;
++};
