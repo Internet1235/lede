@@ -13,6 +13,7 @@
 
 #include <linux/netfilter_bridge.h>
 #include <linux/netfilter_ipv6.h>
+#include <linux/atomic.h>
 
 
 #include <net/arp.h>
@@ -35,6 +36,8 @@
 
 #define do_ge2ext_fast(dev, skb)                                               \
 	((IS_LAN(dev) || IS_WAN(dev) || IS_PPD(dev) || IS_EXT(dev)) && \
+	 (!IS_EXT(dev) || \
+	  (IS_SPACE_AVAILABLE_HEAD(skb) && is_magic_tag_valid(skb))) && \
 	 skb_hnat_is_hashed(skb) && \
 	 skb_hnat_reason(skb) == HIT_BIND_FORCE_TO_CPU)
 #define do_ext2ge_fast_learn(dev, skb)                                         \
@@ -48,6 +51,8 @@
 
 static struct ipv6hdr mape_l2w_v6h;
 static struct ipv6hdr mape_w2l_v6h;
+static atomic64_t hnat_ge_to_ext_no_dev_count = ATOMIC64_INIT(0);
+
 static inline uint8_t get_wifi_hook_if_index_from_dev(const struct net_device *dev)
 {
 	int i;
@@ -480,6 +485,7 @@ unsigned int do_hnat_ge_to_ext(struct sk_buff *skb, const char *func)
 {
 	/*set where we to go*/
 	u8 index;
+	s64 no_dev_count;
 	struct foe_entry *entry;
 	struct net_device *dev;
 
@@ -496,9 +502,12 @@ unsigned int do_hnat_ge_to_ext(struct sk_buff *skb, const char *func)
 
 	dev = get_dev_from_index(index);
 	if (!dev) {
-		trace_printk("%s: called from %s. Get wifi interface fail\n",
-			     __func__, func);
-		return 0;
+		no_dev_count = atomic64_inc_return(&hnat_ge_to_ext_no_dev_count);
+		pr_warn_ratelimited(
+			"%s: no external interface for PPE entry %u (act_dp=%u), dropping packet (total=%lld)\n",
+			__func__, skb_hnat_entry(skb), index,
+			(long long)no_dev_count);
+		goto ext_down;
 	}
 
 	skb->dev = dev;
@@ -548,6 +557,7 @@ unsigned int do_hnat_ge_to_ext(struct sk_buff *skb, const char *func)
 			}
 		}
 	}
+ext_down:
 	/*if external devices is down, invalidate related ppe entry*/
 	if (entry_hnat_is_bound(entry)) {
 		entry->bfib1.state = INVALID;

@@ -109,6 +109,20 @@ function dev_cfg(devname)
         cfgs.VHT_BW = 3
         cfgs.VHT_Sec80_Channel = http.formvalue("VHT_Sec80_Channel") or ""
     end
+    -- VHT_Sec80_Channel is only meaningful for 80+80 (VHT_BW=3). A stale value from a previous
+    -- 160/80+80 configuration survives switching back to 80MHz. Suspected (not proven: no diff
+    -- was captured) cause of an RM2100 ch149/80 profile stuck at ~150 Mbps that only recovered
+    -- after the whole profile was restored from /rom; dropping it outside 80+80 is correct regardless.
+    if tonumber(cfgs.VHT_BW) ~= 3 then
+        cfgs.VHT_Sec80_Channel = nil
+    end
+    -- Derive HT_EXTCHA from the primary channel instead of trusting the manual select: 40MHz
+    -- pairs in 5G are {36,40},{44,48},...,{149,153},{157,161}; a mismatched EXTCHA is another
+    -- way a channel change silently degrades the link.
+    local ch_num = tonumber(cfgs.Channel)
+    if mtkwifi.band(cfgs.WirelessMode) == "5G" and ch_num and ch_num > 14 then
+        cfgs.HT_EXTCHA = (ch_num % 8 == 4 or ch_num % 8 == 5) and 1 or 0
+    end
 
 
     local mimo = http.formvalue("__mimo")
