@@ -31,7 +31,7 @@ local devs = mtkwifi.get_all_devs()
             <tbody>
                 <tr>
                     <td style="width:34px">
-                        <img src="/luci-static/resources/icons/wifi.png" style="float:left; margin-right:10px" />
+                        <img src="/luci-static/resources/icons/wifi.svg" style="float:left; margin-right:10px" />
                     </td>
                     <td colspan="2" style="text-align:left">
                         <big><strong title="<%=dev.profile%>"> Generic Mediatek <%=dev.devname%></strong></big>
@@ -54,9 +54,9 @@ local devs = mtkwifi.get_all_devs()
                     <td></td>
                     <td class="cbi-value-field" style="width:16px; padding:3px">
                         <% if vif.state == "up" then %>
-                        <img src="/luci-static/resources/icons/signal-75-100.png" />
+                        <img src="/luci-static/resources/icons/signal-075-100.svg" />
                         <% else %>
-                        <img src="/luci-static/resources/icons/signal-none.png" />
+                        <img src="/luci-static/resources/icons/signal-none.svg" />
                         <% end %>
                     </td>
                     <td class="cbi-value-field" style="vertical-align:middle; text-align:left; padding:3px"><strong>接口:</strong> <%=vif.vifname%> | <strong>无线名称:</strong> <%=vif.__ssid%> | <strong>信道:</strong> <%=vif.__channel or dev.Channel%> 
@@ -87,9 +87,9 @@ local devs = mtkwifi.get_all_devs()
                     <td></td>
                     <td class="cbi-value-field" style="width:16px; padding:3px">
                         <% if dev.apcli.state == "up" then %>
-                        <img src="/luci-static/resources/icons/signal-75-100.png" />
+                        <img src="/luci-static/resources/icons/signal-075-100.svg" />
                         <% else %>
-                        <img src="/luci-static/resources/icons/signal-none.png" />
+                        <img src="/luci-static/resources/icons/signal-none.svg" />
                         <% end %>
                     </td>
                     <td class="cbi-value-field" style="vertical-align:middle; text-align:left; padding:3px"><strong>接口:</strong> <%=dev.apcli.devname%> | <strong>类型:</strong> 中继 | <strong>状态:</strong> <%=dev.apcli.status%>
