@@ -394,10 +394,10 @@ if next(diff) ~= nil then
         <legend> 无线参数（直接修改无线配置）</legend>
         <p> <span style="color: red"><b>警告</b></span> : 如果你不了解请不要修改!</p>
         <textarea name="raw" id="raw" style="width:98%; height: 200px;"><%
-            local fd = io.open(dev.profile)
-            for line in fd:lines() do
-                print(line)
-            end
+            local fd = assert(io.open(dev.profile, "r"))
+            local raw_profile = assert(fd:read("*a"))
+            fd:close()
+            write(pcdata(raw_profile))
         %></textarea>
     </fieldset>
     <div class="cbi-page-actions">
